@@ -7,6 +7,7 @@ import './index.css'
 import {Route, Routes} from "react-router-dom";
 import HomePage from "./components/HomePage.jsx";
 import TodoCreate from "./components/TodoCreate.jsx";
+import LoginComponent from "./components/LoginComponent.jsx";
 function App() {
 
     return (
@@ -14,6 +15,7 @@ function App() {
             <Routes>
                 <Route path="/" element={<HomePage/>}/>
                 <Route path="/todos/create" element={<TodoCreate/>}/>
+                <Route path="/login" element={<LoginComponent/>}/>
             </Routes>
         </div>
     )

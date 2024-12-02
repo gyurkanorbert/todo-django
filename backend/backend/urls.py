@@ -15,12 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, re_path, include
+from django.contrib.auth import views as auth_views
 
 from todos.views import TodoViewSet
 
+from login import views
+# from backend import login
+# from backend.login import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('todos.urls')),
-    path('api/todos/<uuid:uuid>/', TodoViewSet.as_view({'get': 'get_by_uuid'}))
+    # path('api/todos/<uuid:uuid>/', TodoViewSet.as_view({'get': 'get_by_uuid'})),
+    re_path('login',views.login, name='login'),
+    re_path('signup', views.signup, name='login'),
+    re_path('test_token',views.test_token, name='login'),
+    re_path('me',views.me, name='me'),
 ]
