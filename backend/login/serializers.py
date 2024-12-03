@@ -4,4 +4,9 @@ from todos.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta(object):
         model = User
-        fields = ['uuid', 'name']
+        fields = ['uuid', 'name', 'username', 'email', 'password']
+
+class UserDTO(serializers.ModelSerializer):
+    class Meta(object):
+        model = User
+        fields = ['uuid', 'name', 'id']

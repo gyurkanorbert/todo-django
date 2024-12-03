@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404
-from lxml.html.diff import token
+# from lxml.html.diff import token
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserDTO
 from rest_framework import status
 from rest_framework.authtoken.models import Token  #fetch and create tokens from the database
 from todos.models import User
@@ -70,7 +70,7 @@ def test_token(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def me(request):
-    user_serializer = UserSerializer(request.user)
+    user_serializer = UserDTO(request.user)
     return Response({
         "user": user_serializer.data,
     })

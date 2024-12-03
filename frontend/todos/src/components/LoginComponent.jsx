@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {useNavigate} from "react-router-dom";
+import useAuth from "../hooks/useAuth.jsx";
 
 
 const LoginComponent = () => {
@@ -9,6 +10,7 @@ const LoginComponent = () => {
     const [error, setError] = useState('')
 
     const navigate = useNavigate();
+    const {login} = useAuth();
 
     const submit = async (e) => {
 
@@ -25,7 +27,8 @@ const LoginComponent = () => {
 
           if(res.ok){
               navigate('/')
-              localStorage.setItem('token',data.token)
+              login(data.token)
+
 
           }
       } catch (e) {
@@ -56,6 +59,8 @@ const LoginComponent = () => {
                    value="Login"
                    onClick={submit}
             />
+
+            <input type="button" value="Go to register!" onClick={() => navigate('/register')}/>
 
         </div>
     );

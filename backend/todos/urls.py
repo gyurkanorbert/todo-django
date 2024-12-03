@@ -12,4 +12,6 @@ urlpatterns += [
     re_path('users', views.users),
     re_path('groups', views.groups),
     re_path('join', views.join),
+    re_path('collabs', views.joined_groups),
+    path('group/<str:id>', views.group_by_id),
 ]
