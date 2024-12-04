@@ -19,7 +19,10 @@ class TodoSerializer(serializers.ModelSerializer):
         model = Todo
         fields = ['id', 'uuid','user', 'title', 'completed', 'belongs_group', 'created_at']
 
-
+class TodoCreateDTO(serializers.ModelSerializer):
+    class Meta:
+        model = Todo
+        fields = ['id', 'uuid','user', 'title', 'completed', 'belongs_group', 'created_at']
 class GroupUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserGroup

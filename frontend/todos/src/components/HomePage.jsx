@@ -1,22 +1,25 @@
 import {useEffect, useMemo, useState} from 'react'
+// import reactLogo from './assets/react.svg'
+// import viteLogo from '/vite.svg'
+// import './App.css'
+// import './index.css'
 import Cookie from "js-cookie";
 import {useLocation, useNavigate} from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
-// import {WebSocket} from "vite";
+import CreateGroupModal from "./CreateGroupModal.jsx";
 // import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react'
-//
+
 function HomePage() {
-//
-   const socket = useMemo(() => new WebSocket('ws://localhost:8000/ws/counter/'), [])
-   const groupSocket = useMemo(() => new WebSocket('ws://localhost:8000/ws/group_actions/'), [])
+
+   const socket = useMemo(() => new WebSocket(`ws://127.0.0.1:8000/ws/group_actions/`), [])
    const navigate = useNavigate()
 
     const {logout} = useAuth()
     const [todos, setTodos] = useState([]);
-    const [online, setOnline] = useState(0)
-    const [status, setStatus] = useState('')
     const [groupID, setGroupID] = useState('')
     const [error, setError] = useState('')
+    const [createGroup, setCreateGroup] = useState(false)
+    const [groupName, setGroupName] = useState('')
     const [user,setUser] = useState({
         name: '',
         id: null,
@@ -25,58 +28,24 @@ function HomePage() {
 
     const [groups, setGroups] = useState([]);
 
+
     useEffect(() => {
         socket.onopen = () => {
-            console.log('Connected');
-            setStatus('Connected');
-        };
-
-
-
+            console.log('Group Socket Connected')
+        }
         socket.onmessage = (e) => {
-           const data = JSON.parse(e.data)
-            console.log('Received:', data);
-            if(data.type === 'user_count') {
-                setOnline(data.count);
-            }
-        };
-
-        socket.onclose = () => {
-            console.log('Disconnected');
-            setStatus('Disconnected');
-            setOnline(count => count - 1)
-        };
-
-        socket.onerror = (error) => {
-            console.log('WebSocket error:', error);
-        };
-
-        return () => {
-            if(socket) {
-                socket.close();
-            }
-        };
-    }, [socket]);
-
-
-    useEffect(() => {
-        groupSocket.onopen = () => {
-            console.log('Group Socket Online')
-        }
-
-        groupSocket.onmessage = (e) => {
             const data = JSON.parse(e.data)
-            console.log(data)
-            if(data.type === 'group_update'){
+            if(data.type === "group_update"){
                 setGroups((prev) => [...prev, data.group])
-                console.log(data.group)
             }
+
         }
 
         return () => {
-            groupSocket.close()
+            socket.close()
         }
-    }, [groupSocket]);
+    }, [])
+
 
     const textChange = (value) => {
         setError(null)
@@ -116,6 +85,8 @@ function HomePage() {
         }
 
         }
+
+
 
 
 
@@ -168,58 +139,69 @@ function HomePage() {
 
 
 
-//
-//
+
     return (
     <>
-        <p>Current online users {online}</p>
-        <p>{status}</p>
-
-        {user && (
-            <div>
-                <p>Logged in as {user.name }</p>
-                <input type="text" value={groupID} placeholder="Enter the ID of the group you want to join!" onChange={(e) => textChange(e.target.value)} />
-                <input type="button" value="Join" onClick={joinGroup}/>
-                {error && (
-                    <p>{error}</p>
-                )}
-
-            </div>
-
-
+        {createGroup && (
+            <CreateGroupModal
+                isOpen={createGroup}
+                onClose={() => setCreateGroup(() => !createGroup)}
+                />
         )}
 
 
-        {
-            user && (
-                groups.map((group) => (
-                    <p onClick={() => navigate(`/groups/${group.id}`)} key={group.id}>{group.name}</p>
-                ))
-            )
-        }
-
         {user && (
-            <input type="button" value="Logout" onClick={() => logout()}/>
+    <div className="container mx-auto p-4">
+        <div className="mb-4 p-4 border rounded-md shadow-md bg-white">
+            <p className="text-xl font-bold mb-2">Logged in as {user.name}</p>
+            <input
+                type="text"
+                value={groupID}
+                placeholder="Enter the ID of the group you want to join!"
+                onChange={(e) => textChange(e.target.value)}
+                className="w-full px-3 py-2 mb-2 border rounded-md focus:outline-none focus:ring focus:ring-indigo-200"
+            />
+            <input
+                type="button"
+                value="Join"
+                onClick={joinGroup}
+                className="w-full px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring focus:ring-indigo-200"
+            />
+            {error && (
+                <p className="text-red-500 mt-2">{error}</p>
+            )}
+        </div>
+
+        <div className="mb-4 p-4 border rounded-md shadow-md bg-white">
+            {groups.map((group) => (
+                <p
+                    key={group.id}
+                    onClick={() => navigate(`/groups/${group.id}`)}
+                    className="cursor-pointer text-blue-600 hover:underline"
+                >
+                    {group.name}
+                </p>
+            ))}
+        </div>
+        <div className="w-full ">
+            <input
+                type="button"
+                value="Logout"
+                onClick={() => logout()}
+                className=" w-1/2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 px-4 py-2"
+            />
+            <input
+                type="button"
+                value="Create Group"
+                onClick={() => setCreateGroup(true)}
+                className=" w-1/2 font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 px-4 py-2"
+            />
+        </div>
+
+    </div>
         )}
-
-        {/*{*/}
-        {/*    user && (*/}
-        {/*        user.groups.map((group)  => (*/}
-        {/*            <p key={group}>{group}</p>*/}
-        {/*        ))*/}
-        {/*    )*/}
-        {/*}*/}
-
-
-
-        {/*{todos.map((todo) => (*/}
-        {/*    <div key={todo.uuid}>*/}
-        {/*        <p className="font-black text-lg text-red-300">{todo.title}</p>*/}
-        {/*        <p >Status: <span className={`font-black text-md ${todo.completed ? 'text-red-500' : 'text-green-500'} `}>{todo.completed ? 'Completed' : 'Ongoing'}</span></p>*/}
-        {/*    </div>*/}
-        {/*))}*/}
     </>
-  )
+    )
 
 
 }

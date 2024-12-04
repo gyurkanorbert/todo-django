@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from .models import Todo, User, Group, UserGroup
-from .serializers import TodoSerializer, GroupSerializer, GroupUserSerializer
+from .serializers import TodoSerializer, GroupSerializer, GroupUserSerializer, TodoCreateDTO
 from .serializers import UserSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -17,6 +17,42 @@ class TodoViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def todo(request):
+
+    try:
+        group = request.data.get('group_id')
+        userID = request.user.id
+        # user = User.objects.get(id=userID)
+        title = request.data.get('title')
+
+
+        data = {
+            'title': title,
+            'belongs_group': group,
+            'user': userID,
+        }
+        todo_serializer = TodoCreateDTO(data=data)
+        print(todo_serializer)
+        print(userID)
+        if todo_serializer.is_valid():
+            todo_serializer.save()
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"group_{group}",
+                {
+                    "type": "todo_event",
+                    "todo": todo_serializer.data
+                }
+            )
+            return Response(todo_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(todo_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+
 
 
 @api_view(['GET'])
@@ -26,12 +62,36 @@ def users(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
-def groups(request):
+@permission_classes([IsAuthenticated])
+def create_group(request):
     serializer = GroupSerializer(data=request.data)
-
+    userID = request.user.id
     if serializer.is_valid():
         serializer.save()
+
+
         group = Group.objects.get(id=serializer.data['id'])
+
+        group_user_data = {
+            'user': request.user.id,
+            'group': group.id,
+        }
+
+        group_user_serializer = GroupUserSerializer(data=group_user_data)
+        if group_user_serializer.is_valid():
+            group_user_serializer.save()
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"group_updates_{userID}",
+            {
+                "type": "group_update",
+                "group": {
+                    "id": group.id,
+                    "name": group.name,
+                }
+            }
+        )
         return Response({
             "group": {
                 "id": group.id,
@@ -118,3 +178,6 @@ def group_by_id(request, id):
             "message": "Group not found",
 
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+
