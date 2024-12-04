@@ -39,6 +39,7 @@ function App() {
                 }/>
 
                 <Route path={"/register"} element={<RegisterComponent/>}/>
+                <Route path={"/todo/create"} element={<TodoCreate/>}/>
             </Routes>
         </AuthProvider>
         </div>

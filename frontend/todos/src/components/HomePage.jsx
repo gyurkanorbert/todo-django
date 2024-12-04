@@ -1,19 +1,20 @@
-import {useEffect, useState} from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-// import './App.css'
-// import './index.css'
+import {useEffect, useMemo, useState} from 'react'
 import Cookie from "js-cookie";
 import {useLocation, useNavigate} from "react-router-dom";
 import useAuth from "../hooks/useAuth.jsx";
+// import {WebSocket} from "vite";
 // import { Card, CardHeader, CardBody, CardFooter } from '@chakra-ui/react'
-
+//
 function HomePage() {
-
+//
+   const socket = useMemo(() => new WebSocket('ws://localhost:8000/ws/counter/'), [])
+   const groupSocket = useMemo(() => new WebSocket('ws://localhost:8000/ws/group_actions/'), [])
    const navigate = useNavigate()
 
     const {logout} = useAuth()
     const [todos, setTodos] = useState([]);
+    const [online, setOnline] = useState(0)
+    const [status, setStatus] = useState('')
     const [groupID, setGroupID] = useState('')
     const [error, setError] = useState('')
     const [user,setUser] = useState({
@@ -24,17 +25,58 @@ function HomePage() {
 
     const [groups, setGroups] = useState([]);
 
+    useEffect(() => {
+        socket.onopen = () => {
+            console.log('Connected');
+            setStatus('Connected');
+        };
 
 
-    // const checkIfGroupExists = async (id) => {
-    //     const res = await fetch(`http://localhost:8000/api/group/${id}`)
-    //     if(!res.ok){
-    //         setError(`Error joining group with ID ${groupID}! Group might not exist`)
-    //         return false
-    //
-    //     }
-    //     return true
-    // }
+
+        socket.onmessage = (e) => {
+           const data = JSON.parse(e.data)
+            console.log('Received:', data);
+            if(data.type === 'user_count') {
+                setOnline(data.count);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('Disconnected');
+            setStatus('Disconnected');
+            setOnline(count => count - 1)
+        };
+
+        socket.onerror = (error) => {
+            console.log('WebSocket error:', error);
+        };
+
+        return () => {
+            if(socket) {
+                socket.close();
+            }
+        };
+    }, [socket]);
+
+
+    useEffect(() => {
+        groupSocket.onopen = () => {
+            console.log('Group Socket Online')
+        }
+
+        groupSocket.onmessage = (e) => {
+            const data = JSON.parse(e.data)
+            console.log(data)
+            if(data.type === 'group_update'){
+                setGroups((prev) => [...prev, data.group])
+                console.log(data.group)
+            }
+        }
+
+        return () => {
+            groupSocket.close()
+        }
+    }, [groupSocket]);
 
     const textChange = (value) => {
         setError(null)
@@ -64,7 +106,7 @@ function HomePage() {
         })
             if(res.ok){
                 console.log(await res.json())
-                navigate(`/groups/${groupID}`)
+                // navigate(`/groups/${groupID}`)
             } else {
                 setError('Error joining group! You are either already part of the group or the ID is invalid')
 
@@ -126,11 +168,12 @@ function HomePage() {
 
 
 
-
-
+//
+//
     return (
     <>
-
+        <p>Current online users {online}</p>
+        <p>{status}</p>
 
         {user && (
             <div>

@@ -1,11 +1,4 @@
-import json
 
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,6 +6,8 @@ from rest_framework import viewsets, status
 from .models import Todo, User, Group, UserGroup
 from .serializers import TodoSerializer, GroupSerializer, GroupUserSerializer
 from .serializers import UserSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class TodoViewSet(viewsets.ModelViewSet):
@@ -61,8 +56,20 @@ def groups(request):
 def join(request):
     serializer = GroupUserSerializer(data=request.data)
     if serializer.is_valid():
+
         ug = serializer.save()
+
         group = Group.objects.get(id=request.data['group'])
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "group_updates", {
+                "type": "group_update",
+                "group": {
+                    "id": group.id,
+                    "name": group.name,
+                }
+            }
+        )
         user = User.objects.get(id=request.data['user'])
         # ug = UserGroup.objects.create(user=user, group=group)
         return Response({
