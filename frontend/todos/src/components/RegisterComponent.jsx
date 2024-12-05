@@ -14,7 +14,7 @@ const RegisterComponent = () => {
     const handleSubmit =  async () => {
         try {
 
-        const res = await fetch('http://localhost:8000/signup/', {
+        const res = await fetch('http://localhost:8000/signup', {
             method: 'POST',
             headers: {
                  'Content-Type': 'application/json'
@@ -29,8 +29,11 @@ const RegisterComponent = () => {
             })
         })
 
+
         if(res.ok){
             navigate('/login')
+        } else {
+            console.log(res)
         }
         } catch (e) {
             console.log(e)
@@ -88,6 +91,7 @@ const RegisterComponent = () => {
                         <button
                             type="submit"
                             className="px-4 py-2 font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring focus:ring-indigo-200"
+                            onClick={handleSubmit}
                         >
                             Register
                         </button>

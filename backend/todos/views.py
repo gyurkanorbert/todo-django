@@ -117,7 +117,7 @@ def groups(request):
 def join(request):
     serializer = GroupUserSerializer(data=request.data)
     if serializer.is_valid():
-
+        # print(f"Channel Layer Groups: {get_channel_layer().groups}")
         ug = serializer.save()
 
         group = Group.objects.get(id=request.data['group'])
