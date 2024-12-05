@@ -37,13 +37,14 @@ def todo(request):
         print(todo_serializer)
         print(userID)
         if todo_serializer.is_valid():
-            todo_serializer.save()
+            tdo = todo_serializer.save()
             channel_layer = get_channel_layer()
+            response_serializer = TodoSerializer(tdo)
             async_to_sync(channel_layer.group_send)(
                 f"group_{group}",
                 {
                     "type": "todo_event",
-                    "todo": todo_serializer.data
+                    "todo": response_serializer.data
                 }
             )
             return Response(todo_serializer.data, status=status.HTTP_201_CREATED)

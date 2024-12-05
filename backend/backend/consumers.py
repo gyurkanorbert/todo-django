@@ -1,11 +1,11 @@
 import json
 
-from channels.generic.websocket import AsyncWebsocketConsumer, WebsocketConsumer
-from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from channels.generic.websocket import WebsocketConsumer
+from channels.layers import get_channel_layer
+from todos.models import Todo
 
-# from backend.todos.models import Todo
-# from backend.todos.serializers import TodoCreateDTO
+from todos.serializers import TodoSerializer
 
 
 class UserConsumer(WebsocketConsumer):
@@ -54,41 +54,48 @@ class GroupConsumer(WebsocketConsumer):
         }))
 
 class TodoGroupConsumer(WebsocketConsumer):
-
     def connect(self):
-        channel_layer = get_channel_layer()
-        group_id = self.scope['url_route']['kwargs']['group_id']  # lekeri a matchelo url routebol a csoportid-t
-        async_to_sync(channel_layer.group_add)(f"group_{group_id}", self.channel_name) #hozzaadja a usereket, a csoportnak megfelelo
+        self.channel_layer = get_channel_layer()
+        self.group_id = self.scope['url_route']['kwargs']['group_id']
+        self.group_name = f"group_{self.group_id}" # lekeri a matchelo url routebol a csoportid-t
+        async_to_sync(self.channel_layer.group_add)(
+                            self.group_name,
+                            self.channel_name
+                        )
+            # hozzaadja a usereket, a csoportnak megfelelo
 
         self.accept()
+
     def receive(self, text_data=None, bytes_data=None):
-         channel_layer = get_channel_layer()
-         # data = json.loads(text_data)
-
-         # if data['type'] == 'todo_update':
-         #     todo_id = data['todo_id']
-         #     try:
-         #            todo = Todo.object.get(uuid=todo_id)
-         #            todo.completed = not todo.completed
-         #            todo.save()
-         #            serializer = TodoCreateDTO(todo)
-         #            (async_to_sync(channel_layer.group_send)
-         #             (f"group_{group}", {
-         #
-         #            }))
-         #    except Todo.DoesNotExist:
 
 
-         text_data_json = json.loads(text_data)
-         group_id = self.scope['url_route']['kwargs']['group_id']  # lekeri a matchelo url routebol a csoportid-t
-         async_to_sync(self.channel_layer.group_send)(
-             f"group_{group_id}", {
-             'type': 'todo_event',
-             'todo': text_data_json['todo']
-         })
+        text_data_json = json.loads(text_data)
+        print(f"Received message type: {text_data_json.get('type')}")
+
+        if text_data_json.get('type') == "todo_event":
+            async_to_sync(self.channel_layer.group_send)(
+                self.group_name,
+                {
+                    'type': 'todo_event',
+                    'todo': text_data_json['todo']
+                })
+        elif text_data_json.get('type') == "todo_change_status":
+            todo_id = text_data_json.get('todo_id')
+
+            todo = Todo.objects.get(uuid=todo_id)
+            todo.completed = not todo.completed
+            todo.save()
+            todo_data = TodoSerializer(todo).data
+            async_to_sync(self.channel_layer.group_send)(
+                    self.group_name, {
+                        "type": "todo_event",
+                        "todo": todo_data
+                    }
+            )
 
 
 
 
     def todo_event(self, event):
         self.send(text_data=json.dumps(event))
+

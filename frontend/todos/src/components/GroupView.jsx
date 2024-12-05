@@ -10,7 +10,7 @@ const GroupView = () => {
     const [todos, setTodos] = useState([]);
     const {groupID} = useParams();
     const navigate = useNavigate()
-    const [createVisible, setCreateVisible] = useState(true)
+    const [createVisible, setCreateVisible] = useState(false)
 
     const socket = useMemo(() => new WebSocket(`ws://localhost:8000/ws/groups/${groupID}/`), [])
 
@@ -39,14 +39,25 @@ const GroupView = () => {
     useEffect(() => {
         socket.onopen = () => {
             console.log(`todo socket running: ${socket} `)
+
         }
 
         socket.onmessage = (e) => {
-            const data = JSON.parse(e.data)
-            console.log(data.todo)
-            setTodos((todos) => [...todos, data.todo])
+        const data = JSON.parse(e.data)
+        console.log('Received websocket message:', data)
+
+        if (data.type === 'todo_event') {
+           setTodos((prev) => {
+               const exists = prev.some(todo => todo.uuid === data.todo.uuid);
+               if(exists){
+                   return prev.map((todo) => todo.uuid === data.todo.uuid ? data.todo : todo)
+               } else {
+                   return [...prev, data.todo]
+               }
+           })
 
         }
+    }
 
         return () => {
             socket.close();
@@ -59,21 +70,12 @@ const GroupView = () => {
     }, []);
 
         const toggleComplete = (todoId) => {
-        // Update local state
-        setTodos(prevTodos =>
-            prevTodos.map(todo =>
-                todo.uuid === todoId
-                    ? { ...todo, completed: !todo.completed }
-                    : todo
-            )
-        );
 
-        // implement this
-        // socket.send(JSON.stringify({
-        //     type: 'todo_update',
-        //     todo_id: todoId,
-        //     action: 'toggle_complete'
-        // }));
+
+        socket.send(JSON.stringify({
+            type: 'todo_change_status',
+            todo_id: todoId,
+        }));
     };
 
 
